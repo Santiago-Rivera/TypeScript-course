@@ -46,7 +46,7 @@ files.forEach((file, index) => {
   console.log('='.repeat(50));
   
   try {
-    execSync(`npx ts-node --esm ${file}`, { stdio: 'inherit' });
+    execSync(`node --loader ts-node/esm --no-warnings ${file}`, { stdio: 'inherit' });
   } catch (error) {
     console.error(`❌ Error al ejecutar ${file}`);
   }
