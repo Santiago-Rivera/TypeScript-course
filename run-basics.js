@@ -4,11 +4,16 @@ import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const basicsDir = path.join(__dirname, 'Basics');
+const foldersToProcess = ['Basics', 'Intermediate', 'Advanced'];
 
 // Función recursiva para obtener todos los archivos .ts
-function getAllTypeScriptFiles(dir) {
+function getAllTypeScriptFiles(dir, isRootFolder = true) {
   let files = [];
+  
+  if (!fs.existsSync(dir)) {
+    return files;
+  }
+  
   const items = fs.readdirSync(dir);
 
   items.forEach(item => {
@@ -16,9 +21,12 @@ function getAllTypeScriptFiles(dir) {
     const isDir = fs.lstatSync(fullPath).isDirectory();
 
     if (isDir) {
-      // Solo incluir carpetas POO y modules
-      if (item === 'POO' || item === 'modules') {
-        files = files.concat(getAllTypeScriptFiles(fullPath));
+      // Para la carpeta raíz (Basics), incluir carpetas POO y modules
+      if (isRootFolder && (item === 'POO' || item === 'modules')) {
+        files = files.concat(getAllTypeScriptFiles(fullPath, false));
+      } else if (!isRootFolder) {
+        // Para subcarpetas, incluir todas las carpetas
+        files = files.concat(getAllTypeScriptFiles(fullPath, false));
       }
     } else if (item.endsWith('.ts')) {
       // Agregar archivo .ts relativo a la raíz del proyecto
@@ -30,20 +38,25 @@ function getAllTypeScriptFiles(dir) {
   return files;
 }
 
-const files = getAllTypeScriptFiles(basicsDir);
+// Obtener todos los archivos de las tres carpetas
+let allFiles = [];
+foldersToProcess.forEach(folder => {
+  const folderPath = path.join(__dirname, folder);
+  allFiles = allFiles.concat(getAllTypeScriptFiles(folderPath, true));
+});
 
-if (files.length === 0) {
-  console.log('No se encontraron archivos .ts en la carpeta Basics');
+if (allFiles.length === 0) {
+  console.log('No se encontraron archivos .ts en las carpetas: Basics, Intermediate, Advanced');
   process.exit(0);
 }
 
-console.log(`Ejecutando ${files.length} archivo(s)...\n`);
+console.log(`🚀 Ejecutando ${allFiles.length} archivo(s) de TypeScript...\n`);
 
 // Ejecutar cada archivo
-files.forEach((file, index) => {
-  console.log(`\n${'='.repeat(50)}`);
-  console.log(`📄 [${index + 1}/${files.length}] ${file}`);
-  console.log('='.repeat(50));
+allFiles.forEach((file, index) => {
+  console.log(`\n${'='.repeat(60)}`);
+  console.log(`📄 [${index + 1}/${allFiles.length}] ${file}`);
+  console.log('='.repeat(60));
   
   try {
     execSync(`node --loader ts-node/esm --no-warnings ${file}`, { stdio: 'inherit' });
@@ -52,5 +65,5 @@ files.forEach((file, index) => {
   }
 });
 
-console.log(`\n${'='.repeat(50)}`);
-console.log(`✅ Ejecución completada`);
+console.log(`\n${'='.repeat(60)}`);
+console.log(`✅ Ejecución completada - ${allFiles.length} archivo(s) procesados`);
